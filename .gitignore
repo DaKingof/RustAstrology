@@ -1,0 +1,60 @@
+# Rust
+/target/
+**/*.rs.bk
+Cargo.lock
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Editor directories and files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Build output
+/dist/
+/build/
+
+# Debug logs
+*.log
+
+# Dependencies
+node_modules/
+
+# Emscripten cache
+.emscripten_cache/
+
+# Trunk cache
+.trunk/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Tauri
+/src-tauri/target/
+/src-tauri/Cargo.lock
+/src-tauri/*.pdb
+/src-tauri/*.exe
+/src-tauri/*.dll
+/src-tauri/*.lib
+/src-tauri/*.exp
+/src-tauri/*.rlib
+/src-tauri/*.d
+
+# Swiss Ephemeris files (if downloaded)
+/ephe/
+/swisseph/
+*.se1
+
+# Local Netlify folder if it exists
+.netlify
