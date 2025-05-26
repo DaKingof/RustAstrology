@@ -18,7 +18,42 @@
         "width": 1200,
         "height": 800,
         "resizable": true,
-        "fullscreen": false
+        "fullscreen": false,
+        "decorations": true,
+        "transparent": false
+      }
+    ]
+  },
+  "tauri": {
+    "bundle": {
+      "active": true,
+      "targets": "all",
+      "icon": [
+        "icons/32x32.png",
+        "icons/128x128.png",
+        "icons/128x128@2x.png"
+      ]
+    },
+    "allowlist": {
+      "all": false,
+      "shell": {
+        "all": true,
+        "open": true
+      },
+      "window": {
+        "all": true
+      },
+      "dialog": {
+        "all": true
+      }
+    },
+    "windows": [
+      {
+        "fullscreen": false,
+        "resizable": true,
+        "title": "Rust Astrology",
+        "width": 1200,
+        "height": 800
       }
     ]
   },
@@ -26,14 +61,5 @@
     "shell": {
       "open": true
     }
-  },
-  "bundle": {
-    "active": true,
-    "targets": "all",
-    "icon": [
-      "icons/32x32.png",
-      "icons/128x128.png",
-      "icons/128x128@2x.png"
-    ]
   }
 }

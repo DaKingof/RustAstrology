@@ -13,21 +13,19 @@ pkgs.mkShell {
     # System libraries for Tauri
     openssl
     
-    # Webkit and GTK dependencies
-    webkitgtk_4_1  # Specific version required by Tauri
-    gtk3
-    glib
-    cairo
-    pango
-    atk
-    gdk-pixbuf
+    # QT dependencies
+    qt6.full
+    qt6.qtwebengine
+    qt6.qtwebsockets
+    qt6.qttools
+    qt6.qtbase
+    qt6.qtdeclarative
+    qt6.qtsvg
     
-    # For AppIndicator support
-    libayatana-appindicator
-    
-    # Dependencies required by Tauri on Linux
-    librsvg
-    libsoup_2_4  # Renamed from libsoup
+    # WebEngine dependencies
+    nss
+    nspr
+    libxkbcommon
     
     # Node.js (for Tauri CLI)
     nodejs

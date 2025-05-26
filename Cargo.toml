@@ -13,22 +13,27 @@ js-sys = "0.3.77"
 leptos = "0.7.0"
 leptos_router = "0.7.0"
 log = "0.4.27"
-serde = "1.0.219"
-serde_derive = "1.0.219"
+serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.140"
 serde_with = "3.12.0"
-tauri = { version = "2", optional = true }
+tauri = { version = "2.0.0-beta", features = ["api-all", "system-tray"], optional = true }
 thiserror = "2.0.12"
 tokio = { version = "1.45.1", features = ["sync", "macros", "io-util", "rt", "time"], optional = true }
 wasm-bindgen = "0.2.100"
 wasm-bindgen-futures = "0.4.50"
 wasm-logger = "0.2.0"
-web-sys = "0.3.77"
+web-sys = { version = "0.3.77", features = ["Window", "Document", "Element", "HtmlElement", "HtmlCanvasElement", "WebGlRenderingContext"] }
+
+# QT-specific dependencies
+qt-widgets = { version = "0.10.0", optional = true }
+qt-core = { version = "0.10.0", optional = true }
+qt-gui = { version = "0.10.0", optional = true }
+qt-qml = { version = "0.10.0", optional = true }
 
 [features]
 default = ["wasm"]
 wasm = ["getrandom/js"]
-desktop = ["tokio/full", "tauri"]
+desktop = ["tokio/full", "tauri", "qt-widgets", "qt-core", "qt-gui", "qt-qml"]
 
 [build-dependencies]
-tauri-build = "2.2.0"
+tauri-build = { version = "2.0.0-beta", features = ["qt"] }
