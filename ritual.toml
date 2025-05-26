@@ -1,0 +1,68 @@
+[dependencies.ritual]
+version = "0.4"
+features = ["qt_core"]
+
+[qt]
+version = "5.15.2"
+
+[qt.modules]
+core = { enabled = true }
+gui = { enabled = true }
+widgets = { enabled = true }
+qml = { enabled = true }
+quick = { enabled = true }
+quickcontrols2 = { enabled = true }
+
+[build]
+# Path to Qt installation (auto-detected if not set)
+# qt_install_dir = "/path/to/qt"
+
+# Additional include paths for C++ headers
+include_paths = []
+
+# Additional library paths for linking
+library_paths = []
+
+# Additional libraries to link against
+libraries = ["stdc++"]
+
+[build.macos]
+# Additional macOS-specific build settings
+frameworks = []
+framework_paths = []
+
+[build.linux]
+# Additional Linux-specific build settings
+pkg_config_paths = []
+
+[build.windows]
+# Additional Windows-specific build settings
+vcvarsall = []
+
+[generate]
+# Whether to generate documentation
+documentation = false
+
+# Whether to generate tests
+tests = false
+
+# Whether to generate examples
+examples = false
+
+[generate.features]
+# Enable/disable specific features for generation
+qt_core = true
+qt_gui = true
+qt_widgets = true
+qt_qml = true
+qt_quick = true
+qt_quick_controls_2 = true
+
+[generate.cpp]
+# C++ generation settings
+namespace = "qt"
+
+[generate.rust]
+# Rust generation settings
+edition = "2018"
+lib_name = "qt"

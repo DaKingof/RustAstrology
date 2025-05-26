@@ -1,44 +1,51 @@
-use wasm_bindgen::prelude::*;
+use anyhow::Result;
+use ::log::info; // Use fully qualified path to disambiguate
+use qmetaobject::*;
+use std::ffi::CString;
 
-#[cfg(feature = "wasm")]
-use wasm_bindgen_futures::spawn_local;
-
-#[cfg(feature = "wasm")]
-#[wasm_bindgen]
-pub fn run_app() {
-    // Initialize logger for WebAssembly
-    console_error_panic_hook::set_once();
-    wasm_logger::init(wasm_logger::Config::default());
-    log::info!("WebAssembly application starting...");
-    
-    // Here we would initialize the Leptos app
-    spawn_local(async {
-        log::info!("Async WebAssembly application context initialized");
-        // Initialize your Leptos app here
-    });
+// Declare a QObject with some properties
+#[derive(Default, QObject)]
+pub struct AstrologyApp {
+    base: qt_base_class!(trait QObject),
+    name: qt_property!(QString; NOTIFY name_changed),
+    name_changed: qt_signal!(),
 }
 
-#[cfg(not(feature = "wasm"))]
-fn main() {
-    // Desktop entry point (will not be compiled in WebAssembly builds)
-    println!("Starting Rust Astrology desktop application");
+impl AstrologyApp {
+    fn new() -> Self {
+        let mut obj = Self::default();
+        obj.set_name("Rust Astrology".into());
+        obj
+    }
     
-    // This is only compiled when the "desktop" feature is enabled
-    #[cfg(feature = "desktop")]
-    {
-        // Initialize desktop logging
-        env_logger::init();
-        log::info!("Desktop application starting...");
-        
-        // Normally we would initialize Tauri here, but that's handled
-        // in the src-tauri/src/main.rs file
-        println!("Tauri initialization is handled in the src-tauri crate");
+    fn set_name(&mut self, name: QString) {
+        self.name = name;
+        self.name_changed();
     }
 }
 
-// WebAssembly builds need a main function that does nothing
-// This is because the entry point is run_app() which is called from JavaScript
-#[cfg(feature = "wasm")]
-fn main() {
-    // Do nothing - WebAssembly is initialized through run_app()
+fn main() -> Result<()> {
+    // Initialize the logger
+    env_logger::init();
+    
+    info!("Starting Rust Astrology application...");
+    
+    // Initialize Qt application and engine
+    let mut engine = QmlEngine::new();
+    
+    // Register our QML type
+    qml_register_type::<AstrologyApp>(
+        &CString::new("RustAstrology").unwrap(),
+        1,
+        0,
+        &CString::new("AstrologyApp").unwrap()
+    );
+    
+    // Load the main QML file
+    engine.load_file("qml/main.qml".into());
+    
+    // Run the application using QmlEngine's exec method
+    engine.exec();
+    
+    Ok(())
 }

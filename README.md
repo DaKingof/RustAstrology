@@ -1,81 +1,128 @@
 # Rust Astrology
 
-A modern astrology application built with Rust, WebAssembly, and Tauri. This application provides accurate astrological calculations using the Swiss Ephemeris and presents them through a beautiful, responsive web interface.
+A modern astrology application built with Rust and Qt. This application provides accurate astrological calculations using the Swiss Ephemeris and presents them through a native Qt-based user interface.
 
 ## Features
 
 - Accurate Astrological Calculations: Powered by Swiss Ephemeris
 - Cross-Platform: Runs on Windows, macOS, and Linux
-- Web & Desktop: Build for both web and desktop with shared Rust code
-- High Performance: Leverages WebAssembly for near-native performance
-- Responsive UI: Built with Leptos for a reactive user interface
+- Native Performance: Leverages Qt for smooth, responsive UI
+- Modern UI: Built with Qt Quick and QML for a polished experience
 
 ## Prerequisites
 
 - Rust (latest stable)
-- Node.js (for Tauri)
-- Nix (for NixOS users)
-- System dependencies (handled by Nix)
+- Qt 5.x development libraries
+- Nix (for development environment setup, recommended for all platforms)
 
-## Getting Started
+## Development Setup
 
-### NixOS Setup
+### Using the Development Script (Recommended)
 
-If you're on NixOS, you can enter the development environment with:
+This project includes a `dev.sh` script that sets up the development environment and runs the application:
 
 ```bash
-nix-shell
+# Make the script executable
+chmod +x dev.sh
+
+# Run the development environment
+./dev.sh
 ```
 
-This will:
-1. Set up the Rust toolchain
-2. Install necessary system dependencies
-3. Configure the development environment
+This script will:
+1. Enter a Nix shell with all required dependencies
+2. Set up Qt environment variables
+3. Build and run the application
 
-### Manual Setup
+### Manual Setup (Alternative)
+
+If you prefer not to use the development script, you can set up the environment manually:
 
 1. Install Rust using rustup:
    ```bash
    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
    ```
 
-2. Install WebAssembly targets:
+2. Install Nix (if not already installed):
    ```bash
-   rustup target add wasm32-unknown-unknown
-   rustup target add wasm32-wasi
+   curl -L https://nixos.org/nix/install | sh
    ```
 
-3. Install required tools:
+3. Enter the Nix development shell:
    ```bash
-   cargo install trunk wasm-bindgen-cli wasm-opt
+   nix-shell
    ```
 
-## Development
+4. Build and run the application:
+   ```bash
+   cargo run
+   ```
 
-### Running the Web Version
+## Project Structure
 
-```bash
-trunk serve
-```
+- `src/` - Application source code
+  - `main.rs` - Main application entry point
+- `qml/` - QML UI files
+  - `main.qml` - Main application window
+- `shell.nix` - Nix development environment configuration
+- `dev.sh` - Development script for easy setup and execution
+- `Cargo.toml` - Rust project configuration and dependencies
 
-This will start a development server at `http://localhost:8080`
+## Development Workflow
 
-### Running the Desktop Version
-
-```bash
-cd src-tauri
-cargo tauri dev
-```
-
-## Building for Production
-
-### Web Build
+### Building the Application
 
 ```bash
-trunk build --release
+# Build in debug mode
+cargo build
+
+# Build in release mode
+cargo build --release
 ```
 
-The output will be in the `dist` directory.
+### Running the Application
+
+```bash
+# Run in debug mode (recommended for development)
+./dev.sh
+
+# Or run directly (if environment is already set up)
+cargo run
+```
+
+### Dependencies
+
+- `qmetaobject` - Rust bindings for Qt's meta-object system
+- Qt 5.x - For the GUI framework
+  - qtbase
+  - qtdeclarative
+  - qtquickcontrols2
+  - qtgraphicaleffects
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Qt not found**
+   - Ensure you're running the application through `dev.sh` or have set up the Qt environment variables correctly
+
+2. **Missing libraries**
+   - Run `nix-shell` to ensure all dependencies are available
+
+3. **QML module not found**
+   - Make sure the `QML2_IMPORT_PATH` environment variable is set correctly
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
 ### Desktop Build
 
