@@ -1,32 +1,46 @@
 { pkgs ? import <nixpkgs> {} }:
 
-with pkgs;
-
-mkShell {
-  buildInputs = [
-
+pkgs.mkShell {
+  buildInputs = with pkgs; [
+    # Trunk for Rust WASM development
     trunk
+    
     # Basic build tools
     pkg-config
     cmake
-    clang
+    gnumake
     
-    # System libraries
-    zlib
+    # System libraries for Tauri
     openssl
     
-    # Node.js (for Tauri and npm packages)
+    # Webkit and GTK dependencies
+    webkitgtk_4_1  # Specific version required by Tauri
+    gtk3
+    glib
+    cairo
+    pango
+    atk
+    gdk-pixbuf
+    
+    # For AppIndicator support
+    libayatana-appindicator
+    
+    # Dependencies required by Tauri on Linux
+    librsvg
+    libsoup_2_4  # Renamed from libsoup
+    
+    # Node.js (for Tauri CLI)
     nodejs
     
-    # Rust (minimal installation, rest via rustup)
+    # Rust toolchain
     rustup
+    
+    # Tools for icon generation
+    imagemagick
   ];
 
-  # Simple shell hook to set up Rust
   shellHook = ''
-    export PATH="$HOME/.cargo/bin:$PATH"
-    
-    # Install stable Rust if not present
+    # Set up Rust if not already installed
     if ! command -v rustc &> /dev/null; then
       echo "Installing Rust..."
       curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
@@ -35,14 +49,7 @@ mkShell {
       rustup target add wasm32-unknown-unknown
     fi
     
-    echo "Rust development environment ready!"
-    echo "Run 'cargo install' to install Rust tools"
+    export PATH="$HOME/.cargo/bin:$PATH"
+    echo "Rust Astrology development environment ready!"
   '';
-
-  # Basic environment variables
-  RUST_BACKTRACE = "1";
-  RUST_SRC_PATH = "${rustPlatform.rustLibSrc}";
-  
-  # SSL configuration
-  SSL_CERT_FILE = "${cacert}/etc/ssl/certs/ca-bundle.crt";
 }

@@ -1,100 +1,34 @@
 [package]
-name = "rust_astrology"
+name = "RustAstrology"
 version = "0.1.0"
-edition = "2021"
-authors = ["Rust Astrology Contributors"]
-description = "A modern astrology application built with Rust and WebAssembly"
-license = "MIT OR Apache-2.0"
-
-[lib]
-crate-type = ["cdylib", "rlib"]
-path = "src/lib.rs"
-
-[[bin]]
-name = "rust_astrology_cli"
-path = "src/main.rs"
-# Don't build the binary for WebAssembly
-required-features = ["cli"]
-
-[features]
-# Enable server-side rendering
-ssr = [
-    "leptos/ssr",
-    "leptos_meta/ssr"
-]
-# Enable client-side hydration (default)
-hydrate = [
-    "leptos/hydrate",
-    "leptos_meta/hydrate"
-]
-
-default = ["hydrate"]
-cli = []
+edition = "2024"
 
 [dependencies]
-# Core
-leptos = { version = "0.5", features = ["serde"] }
-leptos_meta = { version = "0.5" }
-
-# Astronomy
-libswe-sys = "0.1"  # Swiss Ephemeris bindings
-
-# WebAssembly
+anyhow = "1.0.98"
 getrandom = { version = "0.2", features = ["js"] }
-wasm-bindgen = { version = "0.2", features = ["serde-serialize"] }
-wasm-bindgen-futures = "0.4"
-web-sys = { version = "0.3", features = [
-    "Window",
-    "Document",
-    "Element",
-    "HtmlElement",
-    "HtmlCanvasElement",
-    "CanvasRenderingContext2d",
-    "WebGlRenderingContext",
-    "WebGlProgram",
-    "WebGlShader",
-    "console",
-    "SvgElement",
-    "SvgGraphicsElement",
-    "SvgCircleElement",
-] }
-
-# WebAssembly specific dependencies
-[target.'cfg(target_arch = "wasm32")'.dependencies]
-js-sys = "0.3"
-log = "0.4"
+async-trait = "0.1.88"
 console_error_panic_hook = "0.1.7"
 console_log = "1.0.0"
+js-sys = "0.3.77"
+leptos = "0.7.0"
+leptos_router = "0.7.0"
+log = "0.4.27"
+serde = "1.0.219"
+serde_derive = "1.0.219"
+serde_json = "1.0.140"
+serde_with = "3.12.0"
+tauri = { version = "2", optional = true }
+thiserror = "2.0.12"
+tokio = { version = "1.45.1", features = ["sync", "macros", "io-util", "rt", "time"], optional = true }
+wasm-bindgen = "0.2.100"
+wasm-bindgen-futures = "0.4.50"
+wasm-logger = "0.2.0"
+web-sys = "0.3.77"
 
-# Non-WebAssembly dependencies
-[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-
-# Math
-nalgebra = { version = "0.32", features = ["serde-serialize"] }
-
-# Utilities
-chrono = { version = "0.4", features = ["serde"] }
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-thiserror = "1.0"
-log = "0.4"
-anyhow = "1.0"
-
-[dev-dependencies]
-wasm-bindgen-test = "0.3"
-env_logger = "0.10"
+[features]
+default = ["wasm"]
+wasm = ["getrandom/js"]
+desktop = ["tokio/full", "tauri"]
 
 [build-dependencies]
-trunk = "0.21"
-
-[package.metadata.wasm-pack.profile.release]
-wasm-opt = ["-O4", "--enable-mutable-globals"]
-
-[package.metadata.wasm-pack.profile.dev]
-wasm-opt = ["-O4", "--enable-mutable-globals"]
-
-[profile.release]
-lto = true
-codegen-units = 1
-opt-level = 3
-
+tauri-build = "2.2.0"

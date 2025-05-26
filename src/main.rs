@@ -1,51 +1,44 @@
-use anyhow::Result;
-use astro::AstrologyCalculator;
+use wasm_bindgen::prelude::*;
 
-mod astro;
+#[cfg(feature = "wasm")]
+use wasm_bindgen_futures::spawn_local;
 
-fn main() -> Result<()> {
-    // Initialize the calculator with default ephemeris path
-    let calculator = AstrologyCalculator::new(None)?;
+#[cfg(feature = "wasm")]
+#[wasm_bindgen]
+pub fn run_app() {
+    // Initialize logger for WebAssembly
+    console_error_panic_hook::set_once();
+    wasm_logger::init(wasm_logger::Config::default());
+    log::info!("WebAssembly application starting...");
     
-    // Calculate sun position for May 24, 2024 at noon UTC
-    let result = calculator.calculate_sun_position(2458993.0)?;
-    println!("Sun position (longitude, latitude): {:?}", result);
-    
-    // Print formatted zodiac position
-    let (longitude, _) = result;
-    let zodiac_sign = match (longitude as i32) / 30 {
-        0 => "Aries",
-        1 => "Taurus",
-        2 => "Gemini",
-        3 => "Cancer",
-        4 => "Leo",
-        5 => "Virgo",
-        6 => "Libra",
-        7 => "Scorpio",
-        8 => "Sagittarius",
-        9 => "Capricorn",
-        10 => "Aquarius",
-        11 => "Pisces",
-        _ => "Unknown"
-    };
-    
-    println!("The Sun is in {} at {:.2}°", zodiac_sign, longitude % 30.0);
-    
-    Ok(())
+    // Here we would initialize the Leptos app
+    spawn_local(async {
+        log::info!("Async WebAssembly application context initialized");
+        // Initialize your Leptos app here
+    });
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_zodiac_calculation() -> Result<()> {
-        let calculator = AstrologyCalculator::new(None)?;
-        let (longitude, latitude) = calculator.calculate_sun_position(2458993.0)?;
+#[cfg(not(feature = "wasm"))]
+fn main() {
+    // Desktop entry point (will not be compiled in WebAssembly builds)
+    println!("Starting Rust Astrology desktop application");
+    
+    // This is only compiled when the "desktop" feature is enabled
+    #[cfg(feature = "desktop")]
+    {
+        // Initialize desktop logging
+        env_logger::init();
+        log::info!("Desktop application starting...");
         
-        assert!(longitude >= 0.0 && longitude < 360.0);
-        assert!(latitude >= -90.0 && latitude <= 90.0);
-        
-        Ok(())
+        // Normally we would initialize Tauri here, but that's handled
+        // in the src-tauri/src/main.rs file
+        println!("Tauri initialization is handled in the src-tauri crate");
     }
+}
+
+// WebAssembly builds need a main function that does nothing
+// This is because the entry point is run_app() which is called from JavaScript
+#[cfg(feature = "wasm")]
+fn main() {
+    // Do nothing - WebAssembly is initialized through run_app()
 }

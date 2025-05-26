@@ -58,3 +58,8 @@ Thumbs.db
 
 # Local Netlify folder if it exists
 .netlify
+
+
+# Added by cargo
+
+/target

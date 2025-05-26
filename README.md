@@ -1,7 +1,5 @@
 # Rust Astrology
 
-RustAstrology project published on GitHub from MCP
-
 A modern astrology application built with Rust, WebAssembly, and Tauri. This application provides accurate astrological calculations using the Swiss Ephemeris and presents them through a beautiful, responsive web interface.
 
 ## Features
@@ -25,7 +23,9 @@ A modern astrology application built with Rust, WebAssembly, and Tauri. This app
 
 If you're on NixOS, you can enter the development environment with:
 
-  nix-shell
+```bash
+nix-shell
+```
 
 This will:
 1. Set up the Rust toolchain
@@ -35,19 +35,75 @@ This will:
 ### Manual Setup
 
 1. Install Rust using rustup:
+   ```bash
    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+   ```
 
 2. Install WebAssembly targets:
+   ```bash
    rustup target add wasm32-unknown-unknown
    rustup target add wasm32-wasi
+   ```
 
-3. Install Trunk:
-   cargo install trunk
+3. Install required tools:
+   ```bash
+   cargo install trunk wasm-bindgen-cli wasm-opt
+   ```
 
-4. Install wasm-opt:
-   cargo install wasm-opt
+## Development
 
-## Running the Application
+### Running the Web Version
+
+```bash
+trunk serve
+```
+
+This will start a development server at `http://localhost:8080`
+
+### Running the Desktop Version
+
+```bash
+cd src-tauri
+cargo tauri dev
+```
+
+## Building for Production
+
+### Web Build
+
+```bash
+trunk build --release
+```
+
+The output will be in the `dist` directory.
+
+### Desktop Build
+
+```bash
+cd src-tauri
+cargo tauri build
+```
+
+## Project Structure
+
+- `/src`: Frontend Rust code (Leptos components)
+- `/src-tauri`: Tauri application code
+- `/assets`: Static assets
+- `/dist`: Production build output (web)
+- `index.html`: Main HTML entry point
+- `Trunk.toml`: Trunk configuration
+
+## Dependencies
+
+Key dependencies:
+- Tauri v2: For building cross-platform desktop apps
+- Leptos: For reactive UI
+- wasm-bindgen: For JavaScript/Rust interop
+- Trunk: WebAssembly web application bundler
+
+## License
+
+MIT
 
 ### Web Version
 

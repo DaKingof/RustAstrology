@@ -6,8 +6,8 @@
     <meta name="description" content="Rust Astrology Application" />
     <link data-trunk rel="rust" data-wasm-opt="0" />
     <title>Rust Astrology</title>
-    <link rel="preload" href="./pkg/rust_astrology_bg.wasm" as="fetch" type="application/wasm" />
-    <link rel="modulepreload" href="./pkg/rust_astrology.js" />
+    <link rel="preload" href="./pkg/RustAstrology_bg.wasm" as="fetch" type="application/wasm" />
+    <link rel="modulepreload" href="./pkg/RustAstrology.js" />
     <style>
       body {
         margin: 0;
@@ -41,7 +41,7 @@
     <noscript>This application requires JavaScript to run. Please enable it to continue.</noscript>
     <div id="root"></div>
     <script type="module">
-      import init, { run_app } from "./pkg/rust_astrology.js";
+      import init, { run_app } from "./pkg/RustAstrology.js";
       
       // Initialize the WebAssembly module and run the app
       init().then(() => {
