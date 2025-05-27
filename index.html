@@ -3,51 +3,308 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content="Rust Astrology Application" />
-    <link data-trunk rel="rust" data-wasm-opt="0" />
-    <title>Rust Astrology</title>
-    <link rel="preload" href="./pkg/RustAstrology_bg.wasm" as="fetch" type="application/wasm" />
-    <link rel="modulepreload" href="./pkg/RustAstrology.js" />
+    <meta name="description" content="Professional Rust Astrology Application with 90° Uranian Dial" />
+    <link data-trunk rel="rust" data-bin="RustAstrology" />
+    <title>Rust Astrology - 90° Uranian Dial</title>
     <style>
+      :root {
+        --primary: #7f5af0;
+        --primary-dark: #6c4ae6;
+        --secondary: #2cb67d;
+        --secondary-dark: #239f66;
+        --background: #16161a;
+        --surface: #1e1e23;
+        --text: #fffffe;
+        --text-muted: #94a1b2;
+        --border: #2a2a30;
+        --error: #ff6b6b;
+        --warning: #ffd93d;
+        --success: #2cb67d;
+        --gradient-primary: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+        --shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        --shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.4);
+      }
+      
+      * {
+        box-sizing: border-box;
+      }
+      
       body {
         margin: 0;
         padding: 0;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-        background-color: #f5f5f5;
-        color: #333;
+        background: var(--background);
+        color: var(--text);
+        line-height: 1.6;
+        min-height: 100vh;
+        background-image: 
+          radial-gradient(circle at 20% 20%, rgba(127, 90, 240, 0.1) 0%, transparent 50%),
+          radial-gradient(circle at 80% 80%, rgba(44, 182, 125, 0.1) 0%, transparent 50%);
       }
-      #root {
-        max-width: 800px;
-        margin: 0 auto;
+      
+      .app {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+      
+      header {
+        text-align: center;
         padding: 2rem;
+        background: var(--surface);
+        border-bottom: 2px solid var(--border);
+        box-shadow: var(--shadow);
       }
-      .chart-container {
+      
+      header h1 {
+        background: var(--gradient-primary);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin: 0 0 0.5rem 0;
+        font-size: 2.5rem;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+      }
+      
+      .subtitle {
+        color: var(--text-muted);
+        margin: 0;
+        font-size: 1.1rem;
+        font-weight: 400;
+      }
+      
+      main {
+        flex: 1;
+        padding: 2rem;
+        max-width: 1400px;
+        margin: 0 auto;
         width: 100%;
+      }
+      
+      .dial-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 2rem;
+      }
+      
+      .dial-header {
+        text-align: center;
+        padding: 1.5rem;
+        background: var(--surface);
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        box-shadow: var(--shadow);
         max-width: 600px;
-        margin: 0 auto 2rem;
-        background: white;
-        border-radius: 8px;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        overflow: hidden;
-      }
-      #chart-canvas {
         width: 100%;
-        height: 600px;
+      }
+      
+      .dial-header h2 {
+        color: var(--primary);
+        margin: 0 0 0.5rem 0;
+        font-size: 1.8rem;
+        font-weight: 700;
+      }
+      
+      .dial-header h3 {
+        color: var(--secondary);
+        margin: 0 0 0.5rem 0;
+        font-size: 1.3rem;
+        font-weight: 600;
+      }
+      
+      .chart-info {
+        color: var(--text-muted);
+        margin: 0;
+        font-style: italic;
+        font-size: 0.95rem;
+      }
+      
+      .dial-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 2rem;
+        width: 100%;
+      }
+      
+      .dial-wrapper {
+        position: relative;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 1rem;
+        background: var(--surface);
+        border-radius: 50%;
+        border: 3px solid var(--primary);
+        box-shadow: var(--shadow-lg);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+      }
+      
+      .dial-wrapper:hover {
+        transform: scale(1.02);
+        box-shadow: 0 12px 50px rgba(127, 90, 240, 0.3);
+      }
+      
+      .astrology-dial {
+        border-radius: 50%;
+        cursor: grab;
+        background: radial-gradient(circle, rgba(127, 90, 240, 0.05) 0%, rgba(22, 22, 26, 0.9) 100%);
         display: block;
+        transition: all 0.2s ease;
+      }
+      
+      .astrology-dial:active {
+        cursor: grabbing;
+        transform: scale(0.98);
+      }
+      
+      .astrology-dial:focus {
+        outline: 2px solid var(--primary);
+        outline-offset: 4px;
+      }
+        color: var(--text-muted);
+        font-size: 0.9rem;
+      }
+      
+      .tech-stack {
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin: 1rem 0;
+      }
+      
+      .tech-item {
+        background: var(--background);
+        color: var(--text);
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        border: 1px solid var(--border);
+        font-size: 0.85rem;
+        font-weight: 500;
+        transition: all 0.2s ease;
+      }
+      
+      .tech-item:hover {
+        border-color: var(--primary);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(127, 90, 240, 0.2);
+      }
+      
+      .credits {
+        font-style: italic;
+        font-size: 0.8rem;
+        opacity: 0.8;
+      }
+      
+      /* Responsive Design */
+      @media (max-width: 768px) {
+        header {
+          padding: 1.5rem 1rem;
+        }
+        
+        header h1 {
+          font-size: 2rem;
+        }
+        
+        .subtitle {
+          font-size: 1rem;
+        }
+        
+        main {
+          padding: 1rem;
+        }
+        
+        .dial-controls {
+          grid-template-columns: 1fr;
+          gap: 1rem;
+        }
+        
+        .tech-stack {
+          flex-direction: column;
+          align-items: center;
+        }
+        
+        .astrology-dial {
+          width: 400px !important;
+          height: 400px !important;
+        }
+      }
+      
+      @media (max-width: 480px) {
+        .dial-header {
+          padding: 1rem;
+        }
+        
+        .dial-header h2 {
+          font-size: 1.5rem;
+        }
+        
+        .dial-header h3 {
+          font-size: 1.1rem;
+        }
+        
+        .astrology-dial {
+          width: 320px !important;
+          height: 320px !important;
+        }
+        
+        .dial-info,
+        .instructions {
+          padding: 1rem;
+        }
+      }
+      
+      /* High contrast mode support */
+      @media (prefers-contrast: high) {
+        :root {
+          --primary: #9f7aea;
+          --secondary: #38d9a9;
+          --text: #ffffff;
+          --background: #000000;
+          --surface: #1a1a1a;
+        }
+      }
+      
+      /* Reduced motion support */
+      @media (prefers-reduced-motion: reduce) {
+        * {
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.01ms !important;
+        }
+        
+        .dial-wrapper:hover {
+          transform: none;
+        }
+      }
+      
+      /* Focus indicators for keyboard navigation */
+      .dial-wrapper:focus-within {
+        outline: 2px solid var(--primary);
+        outline-offset: 4px;
+      }
+      
+      /* Print styles */
+      @media print {
+        body {
+          background: white;
+          color: black;
+        }
+        
+        .dial-wrapper {
+          box-shadow: none;
+          border: 2px solid black;
+        }
+        
+        .instructions,
+        footer {
+          display: none;
+        }
       }
     </style>
   </head>
-  <body>
-    <noscript>This application requires JavaScript to run. Please enable it to continue.</noscript>
-    <div id="root"></div>
-    <script type="module">
-      import init, { run_app } from "./pkg/RustAstrology.js";
-      
-      // Initialize the WebAssembly module and run the app
-      init().then(() => {
-        console.log("WebAssembly module initialized");
-        run_app();
-      }).catch(console.error);
-    </script>
-  </body>
+  <body></body>
 </html>

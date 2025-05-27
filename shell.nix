@@ -9,9 +9,13 @@ pkgs.mkShell {
     pkg-config
     cmake
     gnumake
-    
+    atkmm
+
     # System libraries for Tauri
     openssl
+    
+    # GTK and related dependencies
+    gdk-pixbuf
     
     # QT dependencies
     qt6.full

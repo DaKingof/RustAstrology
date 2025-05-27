@@ -1,5 +1,12 @@
 {
-  "devDependencies": {
-    "@tauri-apps/cli": "^2.5.0"
+  "name": "rust-astrology-test",
+  "version": "1.0.0",
+  "description": "Test script for Rust Astrology application",
+  "main": "test-app.js",
+  "scripts": {
+    "test": "node test-app.js"
+  },
+  "dependencies": {
+    "playwright": "^1.40.0"
   }
 }
