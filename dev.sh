@@ -1,15 +1,21 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -e # Exit immediately if a command exits with a non-zero status.
 
 # Rust Astrology Development Environment Script
 # This script sets up and runs the development environment
 
-echo "Starting Rust Astrology development environment..."
-
-# Check if we're in nix-shell
+# Check if we are already in a nix-shell. The IN_NIX_SHELL variable is set by nix-shell.
 if [ -z "$IN_NIX_SHELL" ]; then
-    echo "Not in nix-shell, entering one now..."
-    exec nix-shell --run "bash $0"
+    # If not, re-execute this script within nix-shell
+    echo "Not in nix-shell, re-executing with nix-shell..."
+    # Note: Ensure your shell.nix or default.nix provides all necessary tools like trunk.
+    exec nix-shell --run "$0 $@"
+    exit $? # Exit with the status of nix-shell if exec fails for some reason (though it shouldn't)
 fi
+
+# --- We are now inside the nix-shell environment --- 
+
+echo "Starting Rust Astrology development environment..."
 
 echo "Rust Astrology development environment ready!"
 
@@ -25,7 +31,15 @@ if command -v lsof >/dev/null 2>&1 && lsof -Pi :3000 -sTCP:LISTEN -t >/dev/null 
     sleep 2
 fi
 
-# Build and serve with Trunk
+echo "Starting development server from within nix-shell..."
+# Clean previous builds
+if trunk clean; then
+    echo "Trunk clean successful."
+else
+    echo "Trunk clean failed. Proceeding anyway..."
+fi
+
+# Serve the application
 echo "Building and serving with Trunk on port 3000..."
 if command -v trunk >/dev/null 2>&1; then
     trunk serve --port 3000

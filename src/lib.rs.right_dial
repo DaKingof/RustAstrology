@@ -1,0 +1,214 @@
+// Right dial - Harmonic with planets
+#[component]
+fn RightDial(
+    current_harmonic: ReadSignal<HarmonicType>,
+    shared_rotation: ReadSignal<f64>,
+    set_shared_rotation: WriteSignal<f64>
+) -> impl IntoView {
+    let canvas_ref = create_node_ref::<leptos::html::Canvas>();
+    let (is_dragging, set_is_dragging) = create_signal(false);
+    let (last_angle, set_last_angle) = create_signal(0.0);
+    let planets = get_sibley_chart();
+    let midpoint_pairs = get_planet_pairs_for_midpoints(&planets);
+
+    let get_angle_from_mouse = move |event: &web_sys::MouseEvent| {
+        if let Some(canvas) = canvas_ref.get() {
+            let canvas_element: HtmlCanvasElement = (*canvas).clone().unchecked_into();
+            let rect = canvas_element.get_bounding_client_rect();
+            let x = event.client_x() as f64 - rect.left();
+            let y = event.client_y() as f64 - rect.top();
+            let dx = x - CENTER_X;
+            let dy = y - CENTER_Y;
+            dy.atan2(dx) * 180.0 / PI
+        } else {
+            0.0
+        }
+    };
+
+    let handle_mouse_down = move |event: web_sys::MouseEvent| {
+        set_is_dragging.set(true);
+        set_last_angle.set(get_angle_from_mouse(&event));
+    };
+
+    let handle_mouse_up = move |_| {
+        set_is_dragging.set(false);
+    };
+
+    let handle_mouse_move = move |event: web_sys::MouseEvent| {
+        if is_dragging.get() {
+            let current_angle = get_angle_from_mouse(&event);
+            let angle_diff = current_angle - last_angle.get();
+            set_shared_rotation.update(|r| *r = (*r + angle_diff + 360.0) % 360.0);
+            set_last_angle.set(current_angle);
+        }
+    };
+
+    let render_dial = move || {
+        if let Some(canvas) = canvas_ref.get() {
+            let canvas_element: HtmlCanvasElement = (*canvas).clone().unchecked_into();
+            if let Ok(Some(context)) = canvas_element.get_context("2d") {
+                if let Ok(context) = context.dyn_into::<CanvasRenderingContext2d>() {
+                    context.clear_rect(0.0, 0.0, CANVAS_SIZE, CANVAS_SIZE);
+                    let harmonic = current_harmonic.get();
+                    let harmonic_range = harmonic.harmonic_range();
+                    let rot = shared_rotation.get();
+                    
+                    // Circle
+                    context.set_stroke_style(&"#ffffff".into());
+                    context.set_line_width(2.0);
+                    context.begin_path();
+                    context.arc(CENTER_X, CENTER_Y, RADIUS, 0.0, 2.0 * PI).unwrap();
+                    context.stroke();
+                    
+                    // Draw tick marks every 5 degrees
+                    context.set_stroke_style(&"#666666".into());
+                    context.set_line_width(1.0);
+                    for i in 0..72 {
+                        let degree = i as f64 * 5.0;
+                        let tick_length = if degree % 30.0 == 0.0 { 10.0 } else { 5.0 };
+                        let (x1, y1) = degrees_to_coords(degree, RADIUS);
+                        let (x2, y2) = degrees_to_coords(degree, RADIUS - tick_length);
+                        context.begin_path();
+                        context.move_to(x1, y1);
+                        context.line_to(x2, y2);
+                        context.stroke();
+                    }
+                    
+                    // 4 Arms with static degree labels showing what they point to at 0 rotation
+                    context.set_stroke_style(&"#666666".into());
+                    context.set_line_width(1.5);
+                    context.set_font("12px Arial");
+                    context.set_fill_style(&"#ffffff".into());
+                    
+                    for i in 0..4 {
+                        // Calculate the angle of this arm in the current rotation
+                        let angle = (i as f64 * 90.0 + rot) % 360.0;
+                        let (x, y) = degrees_to_coords(angle, RADIUS);
+                        
+                        // Draw arm
+                        context.begin_path();
+                        context.move_to(CENTER_X, CENTER_Y);
+                        context.line_to(x, y);
+                        context.stroke();
+                        
+                        // Add arrow to the 0° mark
+                        if i == 0 {
+                            let arrow_size = 10.0;
+                            let angle_rad = (90.0 - angle) * PI / 180.0;
+                            let x1 = x - arrow_size * (angle_rad + 0.3).cos();
+                            let y1 = y + arrow_size * (angle_rad + 0.3).sin();
+                            let x2 = x - arrow_size * (angle_rad - 0.3).cos();
+                            let y2 = y + arrow_size * (angle_rad - 0.3).sin();
+                            
+                            context.begin_path();
+                            context.move_to(x, y);
+                            context.line_to(x1, y1);
+                            context.line_to(x2, y2);
+                            context.close_path();
+                            context.set_fill_style(&"#ffffff".into());
+                            context.fill();
+                        }
+                        
+                        // Calculate the static degree value this arm would point to at 0° rotation
+                        // This is what the arm would be pointing at if rotation was 0
+                        let static_degree = (i as f64 * 90.0 * harmonic_range / 360.0) % 360.0;
+                        let label = format_degree(static_degree);
+                        
+                        // Draw the static degree label INSIDE the circle
+                        // We offset inward from the radius
+                        let label_radius = RADIUS * 0.7;
+                        let (lx, ly) = degrees_to_coords(angle, label_radius);
+                        
+                        // Skip the 0° mark as requested
+                        if i > 0 || static_degree > 0.0 {
+                            let _ = context.fill_text(&label, lx - 20.0, ly + 5.0);
+                        }
+                    }
+                    
+                    // Draw midpoint lines for active arms similar to left dial
+                    context.set_stroke_style(&"rgba(255,255,255,0.3)".into());
+                    context.set_line_width(1.0);
+                    
+                    // Calculate which midpoints are active (same as in left dial)
+                    let arm_angles = (0..4)
+                        .map(|i| (i as f64 * 90.0 + rot) % 360.0)
+                        .collect::<Vec<f64>>();
+                    
+                    // Find active midpoints from the active ones in the left dial
+                    // but transform to harmonic position
+                    let active_midpoints = midpoint_pairs.iter().filter(|&&(mp, _, _)| {
+                        let harmonic_mp = (mp % harmonic_range) * (360.0 / harmonic_range);
+                        arm_angles.iter().any(|&arm_angle| {
+                            let diff = (harmonic_mp - arm_angle + 360.0) % 360.0;
+                            diff < 1.0 || diff > 359.0 || (diff - 180.0).abs() < 1.0
+                        })
+                    }).collect::<Vec<_>>();
+
+                    // Draw connection lines for active midpoints
+                    for &(_, p1_idx, p2_idx) in &active_midpoints {
+                        let p1 = &planets[p1_idx];
+                        let p2 = &planets[p2_idx];
+                        
+                        // Calculate harmonic positions
+                        let p1_harm_pos = (p1.longitude % harmonic_range) * (360.0 / harmonic_range);
+                        let p2_harm_pos = (p2.longitude % harmonic_range) * (360.0 / harmonic_range);
+                        
+                        // Calculate coordinates
+                        let (x1, y1) = degrees_to_coords(p1_harm_pos, RADIUS + 25.0);
+                        let (x2, y2) = degrees_to_coords(p2_harm_pos, RADIUS + 25.0);
+                        
+                        // Draw line between planets
+                        context.begin_path();
+                        context.move_to(x1, y1);
+                        context.line_to(x2, y2);
+                        context.stroke();
+                    }
+                    
+                    // Harmonic Planets (fixed outside dial)
+                    context.set_font("14px Arial");
+                    for planet in &planets {
+                        let harmonic_pos = (planet.longitude % harmonic_range) * (360.0 / harmonic_range);
+                        let (px, py) = degrees_to_coords(harmonic_pos, RADIUS + 25.0);
+                        
+                        // Draw tick mark
+                        context.set_stroke_style(&"#999999".into());
+                        context.set_line_width(1.0);
+                        let (tx1, ty1) = degrees_to_coords(harmonic_pos, RADIUS);
+                        let (tx2, ty2) = degrees_to_coords(harmonic_pos, RADIUS + 20.0);
+                        context.begin_path();
+                        context.move_to(tx1, ty1);
+                        context.line_to(tx2, ty2);
+                        context.stroke();
+                        
+                        // Draw planet symbol
+                        context.set_fill_style(&planet.color.into());
+                        let _ = context.fill_text(&planet.symbol, px - 8.0, py + 6.0);
+                    }
+                }
+            }
+        }
+    };
+
+    create_effect(move |_| {
+        current_harmonic.track();
+        shared_rotation.track();
+        render_dial();
+    });
+
+    view! {
+        <div style="margin: 10px;">
+            <h3 style="color: #fff; margin: 5px 0; font-size: 16px;">
+                {move || format!("{}° Harmonic", current_harmonic.get().harmonic_range() as u32)}
+            </h3>
+            <canvas 
+                node_ref=canvas_ref 
+                width=CANVAS_SIZE 
+                height=CANVAS_SIZE
+                style="cursor: move; border: 1px solid #444;"
+                on:mousedown=handle_mouse_down
+                on:mouseup=handle_mouse_up
+                on:mousemove=handle_mouse_move
+            />
+        </div>
+    }
+}

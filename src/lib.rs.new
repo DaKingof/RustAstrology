@@ -1,0 +1,303 @@
+use leptos::*;
+use wasm_bindgen::prelude::*;
+use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement};
+use std::f64::consts::PI;
+
+// Harmonic types
+#[derive(Debug, Clone, Copy, PartialEq)]
+enum HarmonicType {
+    Second = 2,
+    Third = 3,
+    Fourth = 4,
+    Fifth = 5,
+    Sixth = 6,
+    Seventh = 7,
+    Eighth = 8,
+    Ninth = 9,
+    Tenth = 10,
+    Eleventh = 11,
+    Twelfth = 12,
+    Sixteenth = 16,
+}
+
+impl HarmonicType {
+    fn value(&self) -> u32 {
+        *self as u32
+    }
+
+    fn display_name(&self) -> String {
+        match self {
+            Self::Second => "2nd".to_string(),
+            Self::Third => "3rd".to_string(),
+            Self::Fourth => "4th".to_string(),
+            Self::Fifth => "5th".to_string(),
+            Self::Sixth => "6th".to_string(),
+            Self::Seventh => "7th".to_string(),
+            Self::Eighth => "8th".to_string(),
+            Self::Ninth => "9th".to_string(),
+            Self::Tenth => "10th".to_string(),
+            Self::Eleventh => "11th".to_string(),
+            Self::Twelfth => "12th".to_string(),
+            Self::Sixteenth => "16th".to_string(),
+        }
+    }
+
+    fn harmonic_range(&self) -> f64 {
+        360.0 / self.value() as f64
+    }
+}
+
+// Planet data structure
+#[derive(Debug, Clone)]
+struct Planet {
+    name: &'static str,
+    symbol: &'static str,
+    longitude: f64,
+    color: &'static str,
+}
+
+// US Sibley Chart data
+fn get_sibley_chart() -> Vec<Planet> {
+    vec![
+        Planet { name: "Sun", symbol: "☉", longitude: 13.0, color: "#FFD700" },
+        Planet { name: "Moon", symbol: "☽", longitude: 76.0, color: "#C0C0C0" },
+        Planet { name: "Mercury", symbol: "☿", longitude: 95.0, color: "#FFA500" },
+        Planet { name: "Venus", symbol: "♀", longitude: 63.0, color: "#90EE90" },
+        Planet { name: "Mars", symbol: "♂", longitude: 52.0, color: "#FF6347" },
+        Planet { name: "Jupiter", symbol: "♃", longitude: 18.0, color: "#1E90FF" },
+        Planet { name: "Saturn", symbol: "♄", longitude: 350.0, color: "#8B4513" },
+        Planet { name: "Uranus", symbol: "♅", longitude: 56.0, color: "#00CED1" },
+        Planet { name: "Neptune", symbol: "♆", longitude: 162.0, color: "#4169E1" },
+        Planet { name: "Pluto", symbol: "♇", longitude: 274.0, color: "#8B0000" },
+    ]
+}
+
+// Canvas constants
+const CANVAS_SIZE: f64 = 400.0;
+const CENTER_X: f64 = 200.0;
+const CENTER_Y: f64 = 200.0;
+const RADIUS: f64 = 170.0;
+const PLANET_RADIUS: f64 = 150.0;
+
+// Helper functions
+fn degrees_to_coords(degrees: f64, radius: f64) -> (f64, f64) {
+    let radians = (90.0 - degrees) * PI / 180.0;
+    let x = CENTER_X + radius * radians.cos();
+    let y = CENTER_Y - radius * radians.sin();
+    (x, y)
+}
+
+fn calculate_midpoint(lon1: f64, lon2: f64) -> f64 {
+    let diff = (lon2 - lon1 + 360.0) % 360.0;
+    if diff <= 180.0 {
+        (lon1 + diff / 2.0) % 360.0
+    } else {
+        (lon1 - (360.0 - diff) / 2.0 + 360.0) % 360.0
+    }
+}
+
+fn calculate_midpoints(planets: &[Planet]) -> Vec<f64> {
+    let mut midpoints = Vec::new();
+    let n = planets.len();
+    for i in 0..n {
+        for j in i+1..n {
+            midpoints.push(calculate_midpoint(planets[i].longitude, planets[j].longitude));
+        }
+    }
+    midpoints
+}
+
+// Helper to get planet pairs for midpoints
+fn get_planet_pairs_for_midpoints(planets: &[Planet]) -> Vec<(f64, usize, usize)> {
+    let mut pairs = Vec::new();
+    let n = planets.len();
+    for i in 0..n {
+        for j in i+1..n {
+            let mp = calculate_midpoint(planets[i].longitude, planets[j].longitude);
+            pairs.push((mp, i, j));
+        }
+    }
+    pairs
+}
+
+fn format_degree(degree: f64) -> String {
+    let d = degree as i32;
+    let m = ((degree - d as f64) * 60.0) as i32;
+    format!("{}°{:02}'", d, m)
+}
+
+// Left dial - 360° with planets and midpoints
+#[component]
+fn LeftDial(
+    current_harmonic: ReadSignal<HarmonicType>,
+    shared_rotation: ReadSignal<f64>,
+    set_shared_rotation: WriteSignal<f64>
+) -> impl IntoView {
+    let canvas_ref = create_node_ref::<leptos::html::Canvas>();
+    let (is_dragging, set_is_dragging) = create_signal(false);
+    let (last_angle, set_last_angle) = create_signal(0.0);
+    
+    let planets = get_sibley_chart();
+    let midpoint_pairs = get_planet_pairs_for_midpoints(&planets);
+
+    let get_angle_from_mouse = move |event: &web_sys::MouseEvent| {
+        if let Some(canvas) = canvas_ref.get() {
+            let canvas_element: HtmlCanvasElement = (*canvas).clone().unchecked_into();
+            let rect = canvas_element.get_bounding_client_rect();
+            let x = event.client_x() as f64 - rect.left();
+            let y = event.client_y() as f64 - rect.top();
+            let dx = x - CENTER_X;
+            let dy = y - CENTER_Y;
+            dy.atan2(dx) * 180.0 / PI
+        } else {
+            0.0
+        }
+    };
+
+    let handle_mouse_down = move |event: web_sys::MouseEvent| {
+        set_is_dragging.set(true);
+        set_last_angle.set(get_angle_from_mouse(&event));
+    };
+
+    let handle_mouse_up = move |_| {
+        set_is_dragging.set(false);
+    };
+
+    let handle_mouse_move = move |event: web_sys::MouseEvent| {
+        if is_dragging.get() {
+            let current_angle = get_angle_from_mouse(&event);
+            let angle_diff = current_angle - last_angle.get();
+            set_shared_rotation.update(|r| *r = (*r + angle_diff + 360.0) % 360.0);
+            set_last_angle.set(current_angle);
+        }
+    };
+
+    let render_dial = move || {
+        if let Some(canvas) = canvas_ref.get() {
+            let canvas_element: HtmlCanvasElement = (*canvas).clone().unchecked_into();
+            if let Ok(Some(context)) = canvas_element.get_context("2d") {
+                if let Ok(context) = context.dyn_into::<CanvasRenderingContext2d>() {
+                    context.clear_rect(0.0, 0.0, CANVAS_SIZE, CANVAS_SIZE);
+                    
+                    let harmonic = current_harmonic.get();
+                    let rot = shared_rotation.get();
+                    
+                    // Main circle
+                    context.set_stroke_style(&"#ffffff".into());
+                    context.set_line_width(2.0);
+                    context.begin_path();
+                    context.arc(CENTER_X, CENTER_Y, RADIUS, 0.0, 2.0 * PI).unwrap();
+                    context.stroke();
+                    
+                    // Arms based on harmonic - multiply by 4 as requested
+                    let num_arms = harmonic.value() * 4;
+                    
+                    context.set_stroke_style(&"#666666".into());
+                    context.set_line_width(1.0);
+                    for i in 0..num_arms {
+                        let angle = (i as f64 * (360.0 / num_arms as f64) + rot) % 360.0;
+                        let (x, y) = degrees_to_coords(angle, RADIUS);
+                        context.begin_path();
+                        context.move_to(CENTER_X, CENTER_Y);
+                        context.line_to(x, y);
+                        context.stroke();
+                        
+                        // Add arrow to the 0° mark
+                        if i == 0 {
+                            let arrow_size = 10.0;
+                            let angle_rad = (90.0 - angle) * PI / 180.0;
+                            let x1 = x - arrow_size * (angle_rad + 0.3).cos();
+                            let y1 = y + arrow_size * (angle_rad + 0.3).sin();
+                            let x2 = x - arrow_size * (angle_rad - 0.3).cos();
+                            let y2 = y + arrow_size * (angle_rad - 0.3).sin();
+                            
+                            context.begin_path();
+                            context.move_to(x, y);
+                            context.line_to(x1, y1);
+                            context.line_to(x2, y2);
+                            context.close_path();
+                            context.set_fill_style(&"#ffffff".into());
+                            context.fill();
+                            context.set_fill_style(&"#666666".into());
+                        }
+                    }
+                    
+                    // Draw midpoint lines on the chart for active arms
+                    context.set_stroke_style(&"rgba(255,255,255,0.3)".into());
+                    context.set_line_width(1.0);
+                    
+                    // Calculate arm angles
+                    let arm_angles = (0..num_arms)
+                        .map(|i| (i as f64 * (360.0 / num_arms as f64) + rot) % 360.0)
+                        .collect::<Vec<f64>>();
+                    
+                    // Calculate which midpoints are active (within 1 degree of any arm)
+                    let active_midpoints = midpoint_pairs.iter().filter(|&&(mp, _, _)| {
+                        arm_angles.iter().any(|&arm_angle| {
+                            let diff = (mp - arm_angle + 360.0) % 360.0;
+                            diff < 1.0 || diff > 359.0 || (diff - 180.0).abs() < 1.0
+                        })
+                    }).collect::<Vec<_>>();
+
+                    // Draw connection lines for active midpoints
+                    for &(_, p1_idx, p2_idx) in &active_midpoints {
+                        let p1 = &planets[p1_idx];
+                        let p2 = &planets[p2_idx];
+                        
+                        // Calculate positions
+                        let (x1, y1) = degrees_to_coords(p1.longitude, RADIUS + 25.0);
+                        let (x2, y2) = degrees_to_coords(p2.longitude, RADIUS + 25.0);
+                        
+                        // Draw line between planets
+                        context.begin_path();
+                        context.move_to(x1, y1);
+                        context.line_to(x2, y2);
+                        context.stroke();
+                    }
+                    
+                    // Draw planets OUTSIDE the dial with fixed positions and tick marks
+                    context.set_font("14px Arial");
+                    for planet in &planets {
+                        // Fixed planet position (doesn't rotate with dial)
+                        let (px, py) = degrees_to_coords(planet.longitude, RADIUS + 25.0);
+                        
+                        // Draw tick mark from dial edge to planet
+                        context.set_stroke_style(&"#999999".into());
+                        context.set_line_width(1.0);
+                        let (tx1, ty1) = degrees_to_coords(planet.longitude, RADIUS);
+                        let (tx2, ty2) = degrees_to_coords(planet.longitude, RADIUS + 20.0);
+                        context.begin_path();
+                        context.move_to(tx1, ty1);
+                        context.line_to(tx2, ty2);
+                        context.stroke();
+                        
+                        // Draw planet symbol
+                        context.set_fill_style(&planet.color.into());
+                        let _ = context.fill_text(&planet.symbol, px - 7.0, py + 5.0);
+                    }
+                }
+            }
+        }
+    };
+
+    create_effect(move |_| {
+        current_harmonic.track();
+        shared_rotation.track();
+        render_dial();
+    });
+
+    view! {
+        <div style="margin: 10px;">
+            <h3 style="color: #fff; margin: 5px 0; font-size: 16px;">"360° Dial"</h3>
+            <canvas 
+                node_ref=canvas_ref 
+                width=CANVAS_SIZE 
+                height=CANVAS_SIZE
+                style="cursor: move; border: 1px solid #444;"
+                on:mousedown=handle_mouse_down
+                on:mouseup=handle_mouse_up
+                on:mousemove=handle_mouse_move
+            />
+        </div>
+    }
+}
