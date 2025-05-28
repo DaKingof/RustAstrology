@@ -1,13 +1,29 @@
 [build]
 target = "index.html"
-public_url = "/"
-dist = "dist"
+watch = ["src/**/*.rs", "index.html", "Cargo.toml"]
 
 [serve]
-addresses = ["127.0.0.1"]
-port = 3001
-open = false
+port = 3000
 
-# Simplified wasm settings to avoid pipeline issues
+[reload]
+port = 3001
+
 [build.wasm]
-opt-level = 2
+# Optimize for size
+opt-level = 3
+# Enable wasm-bindgen's reference types feature
+reference_types = true
+# Enable wasm-bindgen's multi-value feature
+multi_value = true
+# Enable wasm-bindgen's bulk memory feature
+bulk_memory = true
+# Enable wasm-bindgen's simd feature
+simd = false  # Disable SIMD for broader compatibility
+# Enable wasm-bindgen's threads feature
+threads = false  # Disable threads for now
+# Enable wasm-bindgen's mutable-global feature
+mutable_global = true
+# Enable wasm-bindgen's sign-ext feature
+sign_ext = true
+# Enable wasm-bindgen's saturating-float-to-int feature
+saturating_float_to_int = true

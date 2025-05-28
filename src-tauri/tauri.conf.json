@@ -1,14 +1,26 @@
 {
-  "$schema": "https://schema.tauri.app/v2/schema.json",
-  "productName": "Rust Astrology",
-  "version": "0.1.0",
-  "identifier": "com.rustastrology.app",
+  "$schema": "https://schema.tauri.app/v1/schema.json",
   "build": {
-    "frontendDist": "../dist",
+    "distDir": "../dist",
     "beforeBuildCommand": "trunk build --release",
-    "devUrl": "http://localhost:8080"
+    "devPath": "http://localhost:8080",
+    "withGlobalTauri": true
   },
-  "app": {
+  "package": {
+    "productName": "Rust Astrology",
+    "version": "0.1.0"
+  },
+  "tauri": {
+    "bundle": {
+      "active": true,
+      "identifier": "com.rustastrology.app",
+      "targets": "all",
+      "icon": [
+        "icons/32x32.png",
+        "icons/128x128.png",
+        "icons/128x128@2x.png"
+      ]
+    },
     "security": {
       "csp": null
     },
@@ -22,44 +34,9 @@
         "decorations": true,
         "transparent": false
       }
-    ]
-  },
-  "tauri": {
-    "bundle": {
-      "active": true,
-      "targets": "all",
-      "icon": [
-        "icons/32x32.png",
-        "icons/128x128.png",
-        "icons/128x128@2x.png"
-      ]
-    },
+    ],
     "allowlist": {
-      "all": false,
-      "shell": {
-        "all": true,
-        "open": true
-      },
-      "window": {
-        "all": true
-      },
-      "dialog": {
-        "all": true
-      }
-    },
-    "windows": [
-      {
-        "fullscreen": false,
-        "resizable": true,
-        "title": "Rust Astrology",
-        "width": 1200,
-        "height": 800
-      }
-    ]
-  },
-  "plugins": {
-    "shell": {
-      "open": true
+      "all": true
     }
   }
 }

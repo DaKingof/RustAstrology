@@ -1,23 +1,74 @@
-# Rust Astrology
+# Natal Astrology Chart Dials
 
-A modern astrology application built with Rust, WebAssembly, and Tauri. This application provides accurate astrological calculations using the Swiss Ephemeris and presents them through a beautiful, responsive web interface.
+A modern astrology application built with Rust, WebAssembly, and Leptos. This application provides interactive natal astrology chart dials with precise harmonic calculations and a beautiful, responsive interface.
 
 ## Features
 
-- Accurate Astrological Calculations: Powered by Swiss Ephemeris
-- Cross-Platform: Runs on Windows, macOS, and Linux
-- Web & Desktop: Build for both web and desktop with shared Rust code
-- High Performance: Leverages WebAssembly for near-native performance
-- Responsive UI: Built with Leptos for a reactive user interface
+- **Dual Chart Dials**: Left 360° dial and right harmonic dial working in tandem
+- **Counterclockwise Rotation**: Traditional natal astrology chart orientation
+- **Harmonic Arms**: Dynamic arms based on selected harmonic (3rd, 4th, 8th, 12th, 16th, 32nd, 64th)
+- **Interactive Controls**: Click-to-select harmonic picker with real-time updates
+- **Planet Symbols**: All major planets positioned with accurate colors
+- **Aries Symbol**: Special blue Aries ♈ symbol as requested
+- **High Performance**: Built with Rust and WebAssembly for near-native speed
+- **Responsive Design**: Works on desktop and mobile devices
+
+## Technical Implementation
+
+### Left Dial (360°)
+- Fixed degree labels every 10° counterclockwise (0°-180° and back to 0°)
+- Harmonic arms = selected harmonic × 4
+- Static 360° scale with traditional natal chart rotation
+- All planets positioned on outer circumference
+
+### Right Dial (Harmonic)
+- Dynamic scale: 0° to (360/harmonic/2)°
+- Planets positioned using harmonic modulus calculation
+- Real-time updates when harmonic selection changes
+- Simplified degree labeling for clarity
+
+### Interactive Features
+- Harmonic picker with 7 options (3rd through 64th)
+- Click-to-select interface for easy interaction
+- Real-time dial updates and calculations
+- Professional dark theme with smooth animations
 
 ## Prerequisites
 
 - Rust (latest stable)
-- Node.js (for Tauri)
-- Nix (for NixOS users)
-- System dependencies (handled by Nix)
+- Node.js (for development tools)
+- Nix (for NixOS users - optional)
 
 ## Getting Started
+
+### Quick Start (using the development script)
+
+```bash
+# Clone and navigate to the project
+git clone <repository-url>
+cd rust-astrology
+
+# Run the development environment
+./dev.sh
+```
+
+### Manual Setup
+
+1. **Install Rust and WebAssembly targets:**
+   ```bash
+   curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+   rustup target add wasm32-unknown-unknown
+   ```
+
+2. **Install Trunk (WebAssembly bundler):**
+   ```bash
+   cargo install trunk
+   ```
+
+3. **Start development server:**
+   ```bash
+   trunk serve --port 3000
+   ```
 
 ### NixOS Setup
 
@@ -27,116 +78,127 @@ If you're on NixOS, you can enter the development environment with:
 nix-shell
 ```
 
-This will:
-1. Set up the Rust toolchain
-2. Install necessary system dependencies
-3. Configure the development environment
+This will automatically set up the Rust toolchain and necessary system dependencies.
 
-### Manual Setup
+## Running the Application
 
-1. Install Rust using rustup:
-   ```bash
-   curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-   ```
-
-2. Install WebAssembly targets:
-   ```bash
-   rustup target add wasm32-unknown-unknown
-   rustup target add wasm32-wasi
-   ```
-
-3. Install required tools:
-   ```bash
-   cargo install trunk wasm-bindgen-cli wasm-opt
-   ```
-
-## Development
-
-### Running the Web Version
-
+### Development Mode
 ```bash
-trunk serve
+trunk serve --port 3000
 ```
 
-This will start a development server at `http://localhost:8080`
+The application will be available at `http://localhost:3000`
 
-### Running the Desktop Version
-
-```bash
-cd src-tauri
-cargo tauri dev
-```
-
-## Building for Production
-
-### Web Build
-
+### Production Build
 ```bash
 trunk build --release
 ```
 
-The output will be in the `dist` directory.
+Output will be in the `dist/` directory.
 
-### Desktop Build
+## Project Structure
 
-```bash
-cd src-tauri
-cargo tauri build
+```
+rust-astrology/
+├── src/
+│   └── main.rs           # Main application code with all components
+├── Cargo.toml           # Rust dependencies and configuration
+├── Trunk.toml           # WebAssembly build configuration
+├── index.html           # HTML entry point with styling
+├── shell.nix            # Nix development environment
+├── dev.sh               # Development script
+└── README.md            # This file
 ```
 
-## Project Structure
+## Key Components
 
-- `/src`: Frontend Rust code (Leptos components)
-- `/src-tauri`: Tauri application code
-- `/assets`: Static assets
-- `/dist`: Production build output (web)
-- `index.html`: Main HTML entry point
-- `Trunk.toml`: Trunk configuration
+### Chart Renderer
+- `ChartRenderer` struct with static methods for drawing
+- Counterclockwise coordinate conversion from degrees
+- Circle structures, harmonic arms, and planet symbols
+- Optimized canvas rendering for smooth performance
 
-## Dependencies
+### Harmonic System
+- `HarmonicType` enum with all supported harmonics
+- Dynamic arm calculation (harmonic × 4)
+- Real-time harmonic scale adjustment
+- Planet position modulus calculations
 
-Key dependencies:
-- Tauri v2: For building cross-platform desktop apps
-- Leptos: For reactive UI
-- wasm-bindgen: For JavaScript/Rust interop
-- Trunk: WebAssembly web application bundler
+### Interactive UI
+- Leptos reactive components for real-time updates
+- Click-to-select harmonic picker
+- Professional dark theme styling
+- Responsive layout for different screen sizes
 
-## License
+## Supported Harmonics
 
-MIT
+- **3rd Harmonic** (12 arms, 0°-60° scale)
+- **4th Harmonic** (16 arms, 0°-45° scale) - Default
+- **8th Harmonic** (32 arms, 0°-22.5° scale)
+- **12th Harmonic** (48 arms, 0°-15° scale)
+- **16th Harmonic** (64 arms, 0°-11.25° scale)
+- **32nd Harmonic** (128 arms, 0°-5.625° scale)
+- **64th Harmonic** (256 arms, 0°-2.8125° scale)
 
-### Web Version
+## Planet Symbols and Colors
 
-  trunk serve --open
+- ☉ Sun (Gold)
+- ☽ Moon (Silver)
+- ☿ Mercury (Orange)
+- ♀ Venus (Light Green)
+- ♂ Mars (Tomato)
+- ♃ Jupiter (Dodger Blue)
+- ♄ Saturn (Saddle Brown)
+- ♅ Uranus (Dark Turquoise)
+- ♆ Neptune (Royal Blue)
+- ♇ Pluto (Dark Red)
+- **♈ Aries (Blue)** - Special blue coloring as requested
 
-### Desktop Version (Tauri)
+## Browser Compatibility
 
-  cd src-tauri
-  cargo tauri dev
+- Modern browsers with WebAssembly support
+- Chrome 57+, Firefox 52+, Safari 11+, Edge 16+
+- Mobile browsers on iOS and Android
 
-## Project Structure
+## Development
 
-.
-├── Cargo.toml           # Root Cargo.toml
-├── shell.nix            # Nix development environment
-├── .env                 # Environment variables
-├── src/                 # Main application code
-│   ├── lib.rs           # Library root
-│   ├── main.rs          # Web entry point
-│   └── ...
-├── src-tauri/           # Tauri desktop application
-│   ├── Cargo.toml
-│   └── ...
-└── index.html           # Web entry point
+### Building
+```bash
+# Development build
+cargo build
+
+# Release build  
+cargo build --release
+
+# WebAssembly build
+trunk build --release
+```
+
+### Testing
+```bash
+# Run Rust tests
+cargo test
+
+# Run WebAssembly tests
+wasm-pack test --node
+```
+
+## Performance
+
+- WebAssembly compilation for near-native performance
+- Optimized canvas rendering with minimal redraws
+- Efficient harmonic calculations
+- Responsive design with smooth animations
 
 ## License
 
 This project is licensed under either of
 
-  Apache License, Version 2.0
-  (LICENSE-APACHE or http://www.apache.org/licenses/LICENSE-2.0)
-
-  MIT license
-  (LICENSE-MIT or http://opensource.org/licenses/MIT)
+- Apache License, Version 2.0
+- MIT License
 
 at your option.
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.

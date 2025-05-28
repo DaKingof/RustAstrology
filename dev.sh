@@ -1,58 +1,36 @@
-#!/usr/bin/env bash
-set -e
+#!/bin/bash
 
-# Check if we're in a nix-shell, if not enter one
+# Rust Astrology Development Environment Script
+# This script sets up and runs the development environment
+
+echo "Starting Rust Astrology development environment..."
+
+# Check if we're in nix-shell
 if [ -z "$IN_NIX_SHELL" ]; then
-  echo "Not in nix-shell, entering one now..."
-  exec nix-shell --run "$0 $@"
+    echo "Not in nix-shell, entering one now..."
+    exec nix-shell --run "bash $0"
 fi
 
-echo "Starting Rust Astrology development environment with QT..."
-
-# Set QT environment variables
-export QT_QUICK_BACKEND=software
-export QT_QUICK_CONTROLS_STYLE=Basic
+echo "Rust Astrology development environment ready!"
 
 # Clean previous builds
 echo "Cleaning previous builds..."
-rm -rf ./pkg ./target/wasm32-unknown-unknown/debug/RustAstrology.wasm
+rm -rf dist/ target/
 
-# Step 1: Build the WebAssembly frontend binary
-echo "Building WebAssembly frontend binary..."
-cargo build --target wasm32-unknown-unknown --no-default-features --features wasm
+# Check for existing processes using port 3000
+echo "Checking for existing processes using port 3000..."
+if command -v lsof >/dev/null 2>&1 && lsof -Pi :3000 -sTCP:LISTEN -t >/dev/null ; then
+    echo "Port 3000 is in use. Killing existing processes..."
+    lsof -ti:3000 | xargs kill -9 2>/dev/null || true
+    sleep 2
+fi
 
-# Step 2: Process the WebAssembly binary with wasm-bindgen
-echo "Processing WebAssembly binary with wasm-bindgen..."
-wasm-bindgen target/wasm32-unknown-unknown/debug/RustAstrology.wasm --out-dir ./pkg --target web --no-typescript
-
-# Step 3: Run the Trunk server for WebAssembly frontend in the background
-echo "Starting WebAssembly frontend server..."
-(trunk serve) &
-TRUNK_PID=$!
-
-# Function to clean up background processes
-cleanup() {
-  echo "Cleaning up..."
-  kill $TRUNK_PID 2>/dev/null || true
-  exit 0
-}
-
-# Set up trap to clean up on script exit
-trap cleanup EXIT
-
-# Give the Trunk server time to start
-echo "Waiting for WebAssembly server to start..."
-for i in {1..10}; do
-  if curl -s http://localhost:8080 >/dev/null; then
-    break
-  fi
-  sleep 1
-done
-
-# Step 4: Run the Tauri application with QT
-echo "Starting Tauri desktop application with QT..."
-cd src-tauri
-cargo run --no-default-features --features desktop
-
-# If we get here, the Tauri app has exited
-cleanup
+# Build and serve with Trunk
+echo "Building and serving with Trunk on port 3000..."
+if command -v trunk >/dev/null 2>&1; then
+    trunk serve --port 3000
+else
+    echo "Trunk not found. Installing..."
+    cargo install trunk
+    trunk serve --port 3000
+fi

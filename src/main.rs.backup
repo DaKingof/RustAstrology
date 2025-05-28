@@ -1,0 +1,436 @@
+use leptos::*;
+use wasm_bindgen::prelude::*;
+use web_sys::{console, CanvasRenderingContext2d, HtmlCanvasElement};
+use std::f64::consts::PI;
+
+// Harmonic options for the picker
+#[derive(Debug, Clone, Copy, PartialEq)]
+enum HarmonicType {
+    Third = 3,
+    Fourth = 4,
+    Eighth = 8,
+    Twelfth = 12,
+    Sixteenth = 16,
+    ThirtySecond = 32,
+    SixtyFourth = 64,
+}
+
+impl HarmonicType {
+    fn value(&self) -> u32 {
+        *self as u32
+    }
+
+    fn display_name(&self) -> String {
+        match self {
+            Self::Third => "3rd".to_string(),
+            Self::Fourth => "4th".to_string(),
+            Self::Eighth => "8th".to_string(),
+            Self::Twelfth => "12th".to_string(),
+            Self::Sixteenth => "16th".to_string(),
+            Self::ThirtySecond => "32nd".to_string(),
+            Self::SixtyFourth => "64th".to_string(),
+        }
+    }
+}
+
+// Planet data structure
+#[derive(Debug, Clone)]
+struct Planet {
+    symbol: &'static str,
+    name: &'static str,
+    longitude: f64,
+    color: &'static str,
+}
+
+impl Planet {
+    fn new(symbol: &'static str, name: &'static str, longitude: f64, color: &'static str) -> Self {
+        Self { symbol, name, longitude, color }
+    }
+}
+
+// Chart configuration and state
+#[derive(Debug, Clone)]
+struct ChartConfig {
+    selected_harmonic: HarmonicType,
+    harmonic_picker_visible: bool,
+    planets: Vec<Planet>,
+}
+
+impl Default for ChartConfig {
+    fn default() -> Self {
+        Self {
+            selected_harmonic: HarmonicType::Fourth,
+            harmonic_picker_visible: false,
+            planets: vec![
+                Planet::new("☉", "Sun", 120.0, "#FFD700"),
+                Planet::new("☽", "Moon", 45.0, "#C0C0C0"),
+                Planet::new("☿", "Mercury", 100.0, "#FFA500"),
+                Planet::new("♀", "Venus", 150.0, "#90EE90"),
+                Planet::new("♂", "Mars", 200.0, "#FF6347"),
+                Planet::new("♃", "Jupiter", 250.0, "#1E90FF"),
+                Planet::new("♄", "Saturn", 300.0, "#8B4513"),
+                Planet::new("♅", "Uranus", 30.0, "#00CED1"),
+                Planet::new("♆", "Neptune", 80.0, "#4169E1"),
+                Planet::new("♇", "Pluto", 280.0, "#8B0000"),
+                Planet::new("♈", "Aries", 0.0, "#0066FF"), // Aries symbol in blue
+            ],
+        }
+    }
+}
+
+// Chart rendering utilities
+struct ChartRenderer;
+
+impl ChartRenderer {
+    const CANVAS_SIZE: f64 = 400.0;
+    const CENTER_X: f64 = 200.0;
+    const CENTER_Y: f64 = 200.0;
+    const OUTER_RADIUS: f64 = 190.0;
+    const INNER_RADIUS: f64 = 100.0;
+    const SYMBOL_RADIUS: f64 = 170.0;
+
+    // Convert degrees to canvas coordinates (counterclockwise from top)
+    fn degrees_to_coords(degrees: f64, radius: f64) -> (f64, f64) {
+        let radians = (90.0 - degrees) * PI / 180.0;
+        let x = Self::CENTER_X + radius * radians.cos();
+        let y = Self::CENTER_Y - radius * radians.sin();
+        (x, y)
+    }
+
+    // Draw basic circle structure
+    fn draw_circle_structure(context: &CanvasRenderingContext2d) {
+        context.set_fill_style(&"#0a0a0a".into());
+        context.fill_rect(0.0, 0.0, Self::CANVAS_SIZE, Self::CANVAS_SIZE);
+
+        context.set_stroke_style(&"#666".into());
+        context.set_line_width(2.0);
+        context.begin_path();
+        context.arc(Self::CENTER_X, Self::CENTER_Y, Self::OUTER_RADIUS, 0.0, 2.0 * PI).unwrap();
+        context.stroke();
+
+        context.begin_path();
+        context.arc(Self::CENTER_X, Self::CENTER_Y, Self::INNER_RADIUS, 0.0, 2.0 * PI).unwrap();
+        context.stroke();
+    }
+
+    // Draw harmonic arms on left dial
+    fn draw_harmonic_arms(context: &CanvasRenderingContext2d, harmonic: HarmonicType) {
+        let num_arms = harmonic.value() * 4;
+        let angle_step = 360.0 / num_arms as f64;
+
+        context.set_stroke_style(&"#ff6b6b".into());
+        context.set_line_width(2.0);
+
+        for i in 0..num_arms {
+            let angle = i as f64 * angle_step;
+            let (x1, y1) = Self::degrees_to_coords(angle, Self::INNER_RADIUS);
+            let (x2, y2) = Self::degrees_to_coords(angle, Self::OUTER_RADIUS);
+            
+            context.begin_path();
+            context.move_to(x1, y1);
+            context.line_to(x2, y2);
+            context.stroke();
+        }
+    }
+
+    // Draw planet symbols
+    fn draw_planet_symbols(context: &CanvasRenderingContext2d, planets: &[Planet]) {
+        context.set_font("16px Arial");
+        
+        for planet in planets {
+            context.set_fill_style(&planet.color.into());
+            let (x, y) = Self::degrees_to_coords(planet.longitude, Self::SYMBOL_RADIUS);
+            context.fill_text(&planet.symbol, x - 8.0, y + 6.0).unwrap();
+        }
+    }
+
+    // Draw degree labels for 360° dial
+    fn draw_360_labels(context: &CanvasRenderingContext2d) {
+        context.set_font("12px Arial");
+        context.set_fill_style(&"#ccc".into());
+
+        for i in 0..36 {
+            let degrees = i * 10;
+            let angle = degrees as f64;
+            let label = if degrees <= 180 {
+                format!("{}°", degrees)
+            } else {
+                format!("{}°", 360 - degrees)
+            };
+            
+            let (x, y) = Self::degrees_to_coords(angle, Self::OUTER_RADIUS + 15.0);
+            context.fill_text(&label, x - 10.0, y + 4.0).unwrap();
+        }
+    }
+}
+
+// Simple harmonic picker component
+#[component]
+fn HarmonicPicker(
+    config: ReadSignal<ChartConfig>,
+    set_config: WriteSignal<ChartConfig>,
+) -> impl IntoView {
+    let harmonics = vec![
+        HarmonicType::Third,
+        HarmonicType::Fourth,
+        HarmonicType::Eighth,
+        HarmonicType::Twelfth,
+        HarmonicType::Sixteenth,
+        HarmonicType::ThirtySecond,
+        HarmonicType::SixtyFourth,
+    ];
+
+    view! {
+        <div
+            style=move || format!(
+                "position: absolute; top: 50px; left: 50%; transform: translateX(-50%); 
+                 background: #2a2a2a; border: 2px solid #666; border-radius: 10px; padding: 20px;
+                 box-shadow: 0 4px 20px rgba(0,0,0,0.5); z-index: 1000;
+                 display: {}; width: 120px;",
+                if config.get().harmonic_picker_visible { "block" } else { "none" }
+            )
+            on:click=move |_| {
+                set_config.update(|c| c.harmonic_picker_visible = false);
+            }
+        >
+            <div style="text-align: center; color: #fff; font-weight: bold; margin-bottom: 15px;">
+                "Harmonic"
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 5px;">
+                {harmonics.into_iter().map(|harmonic| {
+                    let is_selected = move || config.get().selected_harmonic == harmonic;
+                    view! {
+                        <button
+                            style=move || format!(
+                                "background: {}; color: white; border: none; padding: 8px; 
+                                 border-radius: 4px; cursor: pointer; font-size: 14px;",
+                                if is_selected() { "#ff6b6b" } else { "#555" }
+                            )
+                            on:click=move |_| {
+                                set_config.update(|c| c.selected_harmonic = harmonic);
+                            }
+                        >
+                            {harmonic.display_name()}
+                        </button>
+                    }
+                }).collect::<Vec<_>>()}
+            </div>
+        </div>
+    }
+}
+
+// Left dial component (360° with harmonic arms)
+#[component]
+fn LeftDial(config: ReadSignal<ChartConfig>) -> impl IntoView {
+    let canvas_ref = create_node_ref::<leptos::html::Canvas>();
+
+    let render_chart = move || {
+        if let Some(canvas) = canvas_ref.get() {
+            let canvas_element: HtmlCanvasElement = (*canvas).clone().unchecked_into();
+            let context = canvas_element
+                .get_context("2d")
+                .unwrap()
+                .unwrap()
+                .dyn_into::<CanvasRenderingContext2d>()
+                .unwrap();
+
+            let chart_config = config.get();
+            ChartRenderer::draw_circle_structure(&context);
+            ChartRenderer::draw_harmonic_arms(&context, chart_config.selected_harmonic);
+            ChartRenderer::draw_360_labels(&context);
+            ChartRenderer::draw_planet_symbols(&context, &chart_config.planets);
+        }
+    };
+
+    create_effect(move |_| {
+        config.track();
+        render_chart();
+    });
+
+    view! {
+        <div style="display: inline-block; margin: 20px; text-align: center;">
+            <h3 style="margin-bottom: 10px; font-size: 18px; color: #fff;">
+                "Left Dial (360°)"
+            </h3>
+            <canvas
+                node_ref=canvas_ref
+                width=ChartRenderer::CANVAS_SIZE
+                height=ChartRenderer::CANVAS_SIZE
+                style="border: 2px solid #666; cursor: pointer; background: #0a0a0a; border-radius: 8px;"
+            />
+            <p style="font-size: 12px; color: #999; margin-top: 10px;">
+                {move || format!("Harmonic Arms: {} ({})", 
+                    config.get().selected_harmonic.value() * 4,
+                    config.get().selected_harmonic.display_name()
+                )}
+            </p>
+        </div>
+    }
+}
+
+// Right dial component (harmonic scale)
+#[component]
+fn RightDial(config: ReadSignal<ChartConfig>) -> impl IntoView {
+    let canvas_ref = create_node_ref::<leptos::html::Canvas>();
+
+    let render_chart = move || {
+        if let Some(canvas) = canvas_ref.get() {
+            let canvas_element: HtmlCanvasElement = (*canvas).clone().unchecked_into();
+            let context = canvas_element
+                .get_context("2d")
+                .unwrap()
+                .unwrap()
+                .dyn_into::<CanvasRenderingContext2d>()
+                .unwrap();
+
+            let chart_config = config.get();
+            let max_harmonic_degrees = 360.0 / chart_config.selected_harmonic.value() as f64 / 2.0;
+
+            ChartRenderer::draw_circle_structure(&context);
+            ChartRenderer::draw_harmonic_arms(&context, chart_config.selected_harmonic);
+            
+            // Draw simplified harmonic labels
+            context.set_font("10px Arial");
+            context.set_fill_style(&"#ccc".into());
+            
+            for i in 0..=4 {
+                let degrees = i as f64 * (max_harmonic_degrees / 4.0);
+                let angle = degrees * 2.0; // Map to 360° circle
+                let label = format!("{}°", degrees as u32);
+                let (x, y) = ChartRenderer::degrees_to_coords(angle, ChartRenderer::OUTER_RADIUS + 15.0);
+                context.fill_text(&label, x - 10.0, y + 4.0).unwrap();
+            }
+            
+            // Draw harmonic planets
+            let harmonic_planets: Vec<Planet> = chart_config.planets.iter().map(|p| {
+                let harmonic_longitude = p.longitude % max_harmonic_degrees;
+                Planet::new(p.symbol, p.name, harmonic_longitude, p.color)
+            }).collect();
+            ChartRenderer::draw_planet_symbols(&context, &harmonic_planets);
+        }
+    };
+
+    create_effect(move |_| {
+        config.track();
+        render_chart();
+    });
+
+    view! {
+        <div style="display: inline-block; margin: 20px; text-align: center;">
+            <h3 style="margin-bottom: 10px; font-size: 18px; color: #fff;">
+                "Right Dial (Harmonic)"
+            </h3>
+            <canvas
+                node_ref=canvas_ref
+                width=ChartRenderer::CANVAS_SIZE
+                height=ChartRenderer::CANVAS_SIZE
+                style="border: 2px solid #666; cursor: pointer; background: #0a0a0a; border-radius: 8px;"
+            />
+            <p style="font-size: 12px; color: #999; margin-top: 10px;">
+                {move || format!("0° to {}° scale", 
+                    (360.0 / config.get().selected_harmonic.value() as f64 / 2.0) as u32
+                )}
+            </p>
+        </div>
+    }
+}
+
+// Main application component
+#[component]
+fn App() -> impl IntoView {
+    let (config, set_config) = create_signal(ChartConfig::default());
+
+    view! {
+        <div style="font-family: Arial, sans-serif; padding: 20px; background: #1a1a1a; min-height: 100vh; color: #fff; position: relative;">
+            <header style="text-align: center; margin-bottom: 30px;">
+                <h1 style="color: #fff; margin: 0 0 10px 0; font-size: 28px; font-weight: bold;">
+                    "Natal Astrology Chart Dials"
+                </h1>
+                <p style="color: #ccc; margin: 0; font-size: 16px;">
+                    "Custom counterclockwise dials with harmonic arms and interactive controls"
+                </p>
+            </header>
+
+            // Harmonic picker
+            <HarmonicPicker config=config set_config=set_config />
+            
+            <main style="max-width: 1400px; margin: 0 auto;">
+                <div style="display: flex; justify-content: center; gap: 40px; margin-bottom: 30px; flex-wrap: wrap;">
+                    <LeftDial config=config />
+                    <RightDial config=config />
+                </div>
+
+                // Control panel
+                <div style="background: #2a2a2a; padding: 20px; border-radius: 8px; border: 1px solid #444; margin-bottom: 20px;">
+                    <h3 style="color: #fff; margin-bottom: 15px; font-size: 18px; text-align: center;">"Interactive Controls"</h3>
+                    <div style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap;">
+                        <button
+                            style="background: #ff6b6b; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: bold;"
+                            on:click=move |_| {
+                                set_config.update(|c| c.harmonic_picker_visible = !c.harmonic_picker_visible);
+                            }
+                        >
+                            {move || format!("Harmonic: {}", config.get().selected_harmonic.display_name())}
+                        </button>
+                    </div>
+                    <p style="text-align: center; color: #999; font-size: 12px; margin-top: 15px; margin-bottom: 0;">
+                        "Click to open harmonic picker"
+                    </p>
+                </div>
+                
+                <div style="background: #2a2a2a; padding: 20px; border-radius: 8px; border: 1px solid #444;">
+                    <h3 style="color: #fff; margin-bottom: 15px; font-size: 18px;">"Implementation Features:"</h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; color: #ccc; line-height: 1.6;">
+                        <div>
+                            <h4 style="color: #ff6b6b; margin-bottom: 10px;">"Left Dial (360°):"</h4>
+                            <ul style="margin: 0; padding-left: 20px;">
+                                <li>"Fixed labels every 10° counterclockwise"</li>
+                                <li>"Arms = selected harmonic × 4"</li>
+                                <li>"Planet symbols on outer circumference"</li>
+                                <li>"Static 360° scale with back-to-zero labeling"</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 style="color: #28a745; margin-bottom: 10px;">"Right Dial (Harmonic):"</h4>
+                            <ul style="margin: 0; padding-left: 20px;">
+                                <li>"Dynamic harmonic scale"</li>
+                                <li>"Planet positioning scaled to harmonic"</li>
+                                <li>"0° to (360/harmonic/2)° range"</li>
+                                <li>"Simplified degree labeling"</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 style="color: #007bff; margin-bottom: 10px;">"Interactive Features:"</h4>
+                            <ul style="margin: 0; padding-left: 20px;">
+                                <li>"Click-to-select harmonic picker"</li>
+                                <li>"Harmonic options: 3rd, 4th, 8th, 12th, 16th, 32nd, 64th"</li>
+                                <li>"Real-time dial updates"</li>
+                                <li>"Aries ♈ symbol in blue as requested"</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    }
+}
+
+// Entry point
+#[cfg(feature = "csr")]
+pub fn main() {
+    console_error_panic_hook::set_once();
+    console_log::init_with_level(log::Level::Debug).expect("error initializing logger");
+    console::log_1(&"🎯 Starting Natal Astrology Chart Dials application...".into());
+    leptos::mount_to_body(App);
+    console::log_1(&"✅ Custom natal astrology dials loaded successfully!".into());
+}
+
+#[wasm_bindgen]
+pub fn run() {
+    main();
+}
+
+#[wasm_bindgen(start)]
+pub fn start_app() {
+    main();
+}

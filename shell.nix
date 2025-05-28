@@ -1,48 +1,30 @@
 { pkgs ? import <nixpkgs> {} }:
 
-pkgs.mkShell {
-  buildInputs = with pkgs; [
-    # Trunk for Rust WASM development
-    trunk
-    
+with pkgs;
+
+mkShell {
+  buildInputs = [
     # Basic build tools
     pkg-config
     cmake
-    gnumake
-    atkmm
-
-    # System libraries for Tauri
+    clang
+    
+    # System libraries
+    zlib
     openssl
     
-    # GTK and related dependencies
-    gdk-pixbuf
-    
-    # QT dependencies
-    qt6.full
-    qt6.qtwebengine
-    qt6.qtwebsockets
-    qt6.qttools
-    qt6.qtbase
-    qt6.qtdeclarative
-    qt6.qtsvg
-    
-    # WebEngine dependencies
-    nss
-    nspr
-    libxkbcommon
-    
-    # Node.js (for Tauri CLI)
+    # Node.js (for Tauri and npm packages)
     nodejs
     
-    # Rust toolchain
+    # Rust (minimal installation, rest via rustup)
     rustup
-    
-    # Tools for icon generation
-    imagemagick
   ];
 
+  # Simple shell hook to set up Rust
   shellHook = ''
-    # Set up Rust if not already installed
+    export PATH="$HOME/.cargo/bin:$PATH"
+    
+    # Install stable Rust if not present
     if ! command -v rustc &> /dev/null; then
       echo "Installing Rust..."
       curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
@@ -51,7 +33,20 @@ pkgs.mkShell {
       rustup target add wasm32-unknown-unknown
     fi
     
-    export PATH="$HOME/.cargo/bin:$PATH"
-    echo "Rust Astrology development environment ready!"
+    # Install trunk if not present
+    if ! command -v trunk &> /dev/null; then
+      echo "Installing Trunk..."
+      cargo install trunk
+    fi
+    
+    echo "Rust development environment ready!"
+    echo "Run './dev.sh' to start the development server"
   '';
+
+  # Basic environment variables
+  RUST_BACKTRACE = "1";
+  RUST_SRC_PATH = "${rustPlatform.rustLibSrc}";
+  
+  # SSL configuration
+  SSL_CERT_FILE = "${cacert}/etc/ssl/certs/ca-bundle.crt";
 }
