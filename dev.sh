@@ -7,13 +7,18 @@ if [ -z "$IN_NIX_SHELL" ]; then
   exec nix-shell --run "$0 $@"
 fi
 
-echo "Starting Rust Astrology Qt development environment..."
+echo "Starting Uranian Astrology Dial development environment..."
 
 # Set Qt environment variables
 export QT_QUICK_CONTROLS_STYLE=Material
-export QT_QUICK_CONTROLS_MATERIAL_THEME=Light
+export QT_QUICK_CONTROLS_MATERIAL_THEME=Dark
+export QT_QUICK_CONTROLS_MATERIAL_ACCENT=DeepPurple
 export QT_LOGGING_RULES="*.debug=true;qt.*=false"
-export RUST_LOG=debug
+export RUST_LOG=info
+
+# Enable OpenGL for better rendering performance
+export QT_QUICK_BACKEND=software  # Change to 'opengl' if you have GPU acceleration
+export QSG_RENDER_LOOP=basic  # Use 'threaded' for better performance if supported
 
 # Set up library paths
 if [ -n "$LD_LIBRARY_PATH" ]; then
@@ -46,9 +51,17 @@ for dir in $(find /nix/store -name "qtdeclarative*" -type d 2>/dev/null | grep -
     done
 done
 
+# Add our custom QML components to the path
+CUSTOM_QML_PATH="$(pwd)/src/ui/qml"
+if [ -d "$CUSTOM_QML_PATH" ]; then
+    QML_PATHS="$CUSTOM_QML_PATH:$QML_PATHS"
+    echo "Added custom QML path: $CUSTOM_QML_PATH"
+fi
+
 # Remove leading colon and set QML2_IMPORT_PATH
 QML_PATHS=${QML_PATHS#:}
 export QML2_IMPORT_PATH="$QML_PATHS"
+export QML_IMPORT_PATH="$QML_PATHS"
 echo "QML2_IMPORT_PATH set to: $QML2_IMPORT_PATH"
 
 # Set QT_PLUGIN_PATH with a comprehensive search

@@ -1,13 +1,17 @@
-# Rust Astrology
+# Rust Astrology - Uranian Dial
 
-A modern astrology application built with Rust and Qt. This application provides accurate astrological calculations using the Swiss Ephemeris and presents them through a native Qt-based user interface.
+A modern astrology application built with Rust and Qt, featuring an interactive Uranian Astrology Dial. This application provides accurate astrological calculations and presents them through a native Qt-based user interface with a focus on Uranian astrology techniques.
 
 ## Features
 
-- Accurate Astrological Calculations: Powered by Swiss Ephemeris
-- Cross-Platform: Runs on Windows, macOS, and Linux
-- Native Performance: Leverages Qt for smooth, responsive UI
-- Modern UI: Built with Qt Quick and QML for a polished experience
+- **Interactive Uranian Dial**: Visualize planetary positions and aspects on a 360° dial
+- **Harmonic Analysis**: Apply harmonics to the dial (1x to 90x) for advanced astrological techniques
+- **Accurate Calculations**: Built with precise astronomical calculations
+- **Real-time Interaction**: Rotate and zoom the dial with intuitive mouse and touch controls
+- **Customizable Display**: Toggle zodiac signs, degree marks, planets, and midpoints
+- **Cross-Platform**: Runs on Windows, macOS, and Linux
+- **Native Performance**: Leverages Qt for smooth, responsive UI
+- **Modern UI**: Built with Qt Quick and QML for a polished experience
 
 ## Prerequisites
 

@@ -8,18 +8,49 @@ license = "MIT OR Apache-2.0"
 repository = ""
 
 [dependencies]
+# Error handling and logging
 anyhow = "1.0.98"
 log = "0.4.27"
 env_logger = "0.11"
 thiserror = "2.0.12"
+
+# Serialization
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+serde_qs = "0.11.0"
 
-# Qt bindings using qmetaobject
+# Qt bindings
 qmetaobject = "0.2.10"
+
+# Date and time handling
+chrono = { version = "0.4.38", features = ["serde", "clock"] }
+chrono-tz = "0.9.0"
+time = "0.3.0"
+
+# String manipulation and enums
+strum = { version = "0.24.1", features = ["derive"] }
+strum_macros = "0.24.1"
+
+# Math and geometry
+float-cmp = "0.9.0"
+nalgebra = "0.32.3"
+approx = "0.5.1"
+
+# Threading and concurrency
+parking_lot = "0.12.1"
+rayon = "1.8.0"
 
 # For async support (optional)
 tokio = { version = "1.0", features = ["full"], optional = true }
+
+# Astronomical calculations
+swisseph = "0.1.1"
+
+# Configuration management
+config = "0.13.4"
+dirs = "5.0.1"
+
+# UI components are re-exported through qmetaobject
 
 [features]
 default = ["desktop"]
@@ -27,3 +58,9 @@ desktop = []
 
 [build-dependencies]
 cc = "1.0"
+
+# Enable more compiler optimizations in release builds
+[profile.release]
+lto = true
+codegen-units = 1
+opt-level = 3
